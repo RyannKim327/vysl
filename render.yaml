@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: vysl-ingest
+    env: docker
+    region: singapore
+    plan: free
+    dockerContext: ./ingest
+    dockerfilePath: ingest/Dockerfile
+    envVars:
+      - key: PORT
+        value: 3001

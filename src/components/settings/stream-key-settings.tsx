@@ -120,8 +120,8 @@ export default function StreamKeySettings() {
             </button>
           </div>
           <p className="text-xs text-muted">
-            Stored in localStorage and sent only to your local ingest server when
-            you go live. Publishing starts automatically when your stream starts.
+            Stored in localStorage and sent only to your ingest server when you go
+            live. Publishing starts automatically when your stream starts.
           </p>
         </div>
 

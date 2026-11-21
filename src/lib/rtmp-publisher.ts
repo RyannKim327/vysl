@@ -50,9 +50,17 @@ export class RtmpPublisher {
 
     const ws = new WebSocket(options.endpoint);
     this.ws = ws;
+    let reportedError = false;
+    const reportError = (message: string) => {
+      if (reportedError) return;
+      reportedError = true;
+      options.onError?.(message);
+      this.stop();
+    };
+
     await new Promise<void>((resolve, reject) => {
       const timeout = window.setTimeout(() => {
-        reject(new Error("The ingest server did not respond."));
+        reject(new Error("The ingest server did not respond. Check NEXT_PUBLIC_INGEST_WS_URL."));
       }, 10000);
       ws.onopen = () => {
         window.clearTimeout(timeout);
@@ -64,14 +72,14 @@ export class RtmpPublisher {
             return;
           }
           if (message.type !== "error") return;
-          options.onError?.(
-            typeof message.message === "string"
-              ? message.message
-              : "RTMP publishing failed.",
+          reportError(
+            typeof message.message === "string" ? message.message : "RTMP publishing failed.",
           );
-          this.stop();
         };
-        ws.onerror = () => options.onError?.("RTMP connection error.");
+        ws.onerror = () =>
+          reportError(
+            "RTMP connection error. Check NEXT_PUBLIC_INGEST_WS_URL and that the ingest server is running.",
+          );
         ws.onclose = () => {
           if (this.ws !== ws) return;
           this.ws = null;
@@ -80,13 +88,17 @@ export class RtmpPublisher {
               this.recorder.stop();
             } catch {}
           }
-          options.onError?.("RTMP connection closed.");
+          reportError("The ingest server closed the connection.");
         };
         resolve();
       };
       ws.onerror = () => {
         window.clearTimeout(timeout);
-        reject(new Error("Could not connect to the ingest server."));
+        reject(
+          new Error(
+            "Could not connect to the ingest server. Check NEXT_PUBLIC_INGEST_WS_URL and that the ingest server is reachable.",
+          ),
+        );
       };
     });
 

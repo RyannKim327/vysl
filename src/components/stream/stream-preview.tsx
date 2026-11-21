@@ -519,7 +519,7 @@ export default function StreamPreview() {
     if (!endpoint) {
       setPublishStatus("error");
       setPublishError(
-        "RTMP publishing needs the local ingest server or NEXT_PUBLIC_INGEST_WS_URL.",
+        "RTMP publishing needs a separate ingest server because Vercel cannot run ffmpeg. Set NEXT_PUBLIC_INGEST_WS_URL to your ingest server's wss:// URL and redeploy.",
       );
       return;
     }
