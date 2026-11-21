@@ -1,13 +1,12 @@
 export const STREAM_SETTINGS_KEY = "vysl.stream-settings";
-export const FACEBOOK_RTMP_URL = "rtmps://live-api-s.facebook.com:443/rtmp/";
 
 export type StreamSettings = {
-  rtmpUrl: string;
-  streamKey: string;
+  whipUrl: string;
+  token: string;
 };
 
 export function defaultStreamSettings(): StreamSettings {
-  return { rtmpUrl: FACEBOOK_RTMP_URL, streamKey: "" };
+  return { whipUrl: "", token: "" };
 }
 
 export function readStreamSettings(): StreamSettings {
@@ -20,8 +19,8 @@ export function readStreamSettings(): StreamSettings {
 
     const values = parsed as Record<string, unknown>;
     return {
-      rtmpUrl: typeof values.rtmpUrl === "string" ? values.rtmpUrl : FACEBOOK_RTMP_URL,
-      streamKey: typeof values.streamKey === "string" ? values.streamKey : "",
+      whipUrl: typeof values.whipUrl === "string" ? values.whipUrl : "",
+      token: typeof values.token === "string" ? values.token : "",
     };
   } catch {
     return defaultStreamSettings();

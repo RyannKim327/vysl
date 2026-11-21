@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import Header from "@/components/layout/header";
-import StreamKeySettings from "@/components/settings/stream-key-settings";
+import StreamDestinationSettings from "@/components/settings/stream-destination-settings";
 import StreamLayoutSettings from "@/components/settings/stream-layout-settings";
 import StreamSourceSettings from "@/components/settings/stream-source-settings";
 
@@ -18,8 +18,8 @@ export default function SettingsPage() {
             Stream configuration
           </h1>
           <p className="mt-3 max-w-2xl leading-7 text-muted">
-            Save your RTMP destination and choose a studio layout. Facebook Live
-            ingest is filled in by default; everything stays in your browser&apos;s
+            Save a WHIP publish URL and choose a studio layout. Create a live input
+            in Cloudflare Stream to get one; everything stays in your browser&apos;s
             localStorage so it is ready the next time you open the studio.
           </p>
         </div>
@@ -29,7 +29,7 @@ export default function SettingsPage() {
             <div className="h-96 animate-pulse rounded-3xl border border-border bg-surface-alt/60" />
           }
         >
-          <StreamKeySettings />
+          <StreamDestinationSettings />
         </Suspense>
 
         <Suspense
@@ -53,8 +53,9 @@ export default function SettingsPage() {
             Privacy by default
           </p>
           <p className="mt-2 max-w-2xl leading-7 text-muted">
-            Stream keys are never uploaded by Vysl. Clearing browser data removes
-            them, and you can delete them at any time with the clear button above.
+            Your WHIP endpoint and token are only sent to the streaming service
+            when you go live. Clearing browser data removes them, and you can
+            delete them at any time with the clear button above.
             Need to stream now?{" "}
             <Link href="/stream" className="font-medium text-accent hover:underline">
               Open the stream studio

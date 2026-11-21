@@ -7,7 +7,7 @@ import { useStreamChatFeed, useStreamRoom } from "@/components/stream/stream-roo
 import { useStreamLayout } from "@/components/stream/use-stream-layout";
 import { useStreamSource } from "@/components/stream/use-stream-source";
 import { HOST_ID, type StreamSignal } from "@/components/stream/use-stream-channel";
-import { getIngestEndpoint, RtmpPublisher } from "@/lib/rtmp-publisher";
+import { WhipPublisher } from "@/lib/whip-publisher";
 import { readStreamSettings, STREAM_SETTINGS_KEY } from "@/lib/stream-settings";
 import {
   SOURCE_MODES,
@@ -171,7 +171,7 @@ export default function StreamPreview() {
   const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const audioNodesRef = useRef<AudioNode[]>([]);
   const screenEndedRef = useRef<(() => void) | null>(null);
-  const publisherRef = useRef<RtmpPublisher | null>(null);
+  const publisherRef = useRef<WhipPublisher | null>(null);
   const publishAttemptRef = useRef(0);
   const publishedVersionRef = useRef<number | null>(null);
   const wasPreviewingRef = useRef(false);
@@ -498,40 +498,31 @@ export default function StreamPreview() {
     if (previewing && wasPreviewing) rebuildBroadcast();
   }, [previewing, rebuildBroadcast, source]);
 
-  const stopRtmp = useCallback(() => {
+  const stopPublishing = useCallback(() => {
     publishAttemptRef.current += 1;
     publisherRef.current?.stop();
     setPublishStatus("idle");
     setPublishError(null);
   }, []);
 
-  const startRtmp = useCallback(async () => {
+  const startPublishing = useCallback(async () => {
     const stream = localStreamRef.current;
     if (!stream) return;
     const attempt = ++publishAttemptRef.current;
 
-    if (!settings.rtmpUrl || !settings.streamKey) {
+    if (!settings.whipUrl) {
       setPublishStatus("error");
-      setPublishError("Save an RTMP URL and stream key in Settings to go live.");
-      return;
-    }
-    const endpoint = getIngestEndpoint();
-    if (!endpoint) {
-      setPublishStatus("error");
-      setPublishError(
-        "RTMP publishing needs a separate ingest server because Vercel cannot run ffmpeg. Set NEXT_PUBLIC_INGEST_WS_URL to your ingest server's wss:// URL and redeploy.",
-      );
+      setPublishError("Save a WHIP publish URL in Settings to go live.");
       return;
     }
 
     try {
       setPublishError(null);
       setPublishStatus("connecting");
-      if (!publisherRef.current) publisherRef.current = new RtmpPublisher();
+      if (!publisherRef.current) publisherRef.current = new WhipPublisher();
       await publisherRef.current.start(stream, {
-        endpoint,
-        rtmpUrl: settings.rtmpUrl,
-        streamKey: settings.streamKey,
+        endpoint: settings.whipUrl,
+        token: settings.token,
         onError: (message) => {
           if (attempt !== publishAttemptRef.current) return;
           setPublishStatus("error");
@@ -544,23 +535,23 @@ export default function StreamPreview() {
       if (attempt !== publishAttemptRef.current) return;
       setPublishStatus("error");
       setPublishError(
-        caught instanceof Error ? caught.message : "Could not start RTMP publishing.",
+        caught instanceof Error ? caught.message : "Could not start WHIP publishing.",
       );
     }
-  }, [settings.rtmpUrl, settings.streamKey]);
+  }, [settings.whipUrl, settings.token]);
 
   useEffect(() => {
     if (!previewing) {
-      stopRtmp();
+      stopPublishing();
       publishedVersionRef.current = null;
       return;
     }
-    if (!settings.rtmpUrl || !settings.streamKey) return;
+    if (!settings.whipUrl) return;
     if (publishedVersionRef.current === broadcastVersion) return;
     publishedVersionRef.current = broadcastVersion;
-    stopRtmp();
-    void startRtmp();
-  }, [broadcastVersion, previewing, settings.rtmpUrl, settings.streamKey, startRtmp, stopRtmp]);
+    stopPublishing();
+    void startPublishing();
+  }, [broadcastVersion, previewing, settings.whipUrl, settings.token, startPublishing, stopPublishing]);
 
   const stopScreenShare = useCallback(() => {
     screenEndedRef.current?.();
@@ -700,7 +691,7 @@ export default function StreamPreview() {
   }
 
   function stopPreview() {
-    stopRtmp();
+    stopPublishing();
     screenEndedRef.current?.();
     screenEndedRef.current = null;
     stopComposition();
@@ -777,10 +768,10 @@ export default function StreamPreview() {
               }`}
             >
               {publishStatus === "live"
-                ? "Facebook Live"
+                ? "Live via WHIP"
                 : publishStatus === "connecting"
                   ? "Going live…"
-                  : "RTMP error"}
+                  : "WHIP error"}
             </span>
           )}
           <span
@@ -833,16 +824,14 @@ export default function StreamPreview() {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 text-xs">
-          {settings.streamKey ? (
+          {settings.whipUrl ? (
             <>
               <p className="font-medium text-foreground">Destination ready</p>
-              <p className="truncate font-mono text-muted">
-                {settings.rtmpUrl || "Custom RTMP endpoint"}
-              </p>
+              <p className="truncate font-mono text-muted">{settings.whipUrl}</p>
             </>
           ) : (
             <>
-              <p className="font-medium text-foreground">No stream key saved</p>
+              <p className="font-medium text-foreground">No WHIP URL saved</p>
               <p className="text-muted">
                 Add one in{" "}
                 <Link href="/settings" className="text-accent hover:underline">
@@ -921,8 +910,8 @@ export default function StreamPreview() {
               type="button"
               onClick={
                 publishStatus === "live" || publishStatus === "connecting"
-                  ? stopRtmp
-                  : () => void startRtmp()
+                  ? stopPublishing
+                  : () => void startPublishing()
               }
               className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${
                 publishStatus === "live"

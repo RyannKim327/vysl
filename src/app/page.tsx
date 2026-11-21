@@ -3,9 +3,9 @@ import Header from "@/components/layout/header";
 
 const features = [
   {
-    title: "Multistream anywhere",
+    title: "Publish from the browser",
     description:
-      "Send one live feed to YouTube, Twitch, Kick, or any RTMP destination without juggling accounts.",
+      "Send one composited feed to any RFC 9725 WHIP endpoint, such as a Cloudflare Stream live input, without extra broadcast software.",
   },
   {
     title: "No account required",
@@ -13,9 +13,9 @@ const features = [
       "Open Vysl and start configuring instantly. No sign-up, no onboarding funnel, no lock-in.",
   },
   {
-    title: "Local-first keys",
+    title: "Local-first credentials",
     description:
-      "RTMP URLs and stream keys stay in your browser's localStorage. Your credentials never leave your device.",
+      "WHIP URLs and tokens stay in your browser's localStorage. Your credentials never leave your device.",
   },
   {
     title: "Built for speed",
@@ -27,8 +27,8 @@ const features = [
 const steps = [
   {
     step: "01",
-    title: "Add destinations",
-    description: "Paste the RTMP server and stream key for each platform you want to reach.",
+    title: "Add a WHIP endpoint",
+    description: "Paste the WHIP publish URL, plus a token if your service requires one.",
   },
   {
     step: "02",
@@ -38,7 +38,7 @@ const steps = [
   {
     step: "03",
     title: "Go live",
-    description: "Start your stream once and broadcast to every connected destination.",
+    description: "Start your preview once and publish the composited feed from your browser.",
   },
 ];
 
@@ -52,16 +52,15 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl gap-14 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
             <div className="flex flex-col gap-7">
               <p className="inline-flex w-fit items-center rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium tracking-[0.18em] text-muted uppercase">
-                Restream alternative
+                Browser-native live studio
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-7xl">
                 Go live everywhere.
                 <span className="text-accent"> Keep your keys yours.</span>
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-muted text-pretty">
-                Vysl is a lightweight multistreaming studio for creators. Connect
-                your RTMP destinations, save them locally, and stream without
-                creating an account.
+                Vysl is a lightweight live studio for creators. Point it at a WHIP
+                endpoint, save it locally, and stream without creating an account.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -81,7 +80,7 @@ export default function Home() {
                 {[
                   { value: "No account", label: "Start instantly" },
                   { value: "LocalStorage", label: "Keys stay on device" },
-                  { value: "RTMP", label: "Stream to any platform" },
+                  { value: "WHIP", label: "Browser-native publishing" },
                 ].map((stat) => (
                   <div key={stat.label} className="border-t border-border pt-4">
                     <p className="text-sm font-semibold">{stat.value}</p>
@@ -104,9 +103,9 @@ export default function Home() {
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
-                    { name: "YouTube", status: "Ready", detail: "rtmp://a.rtmp.youtube.com/live2" },
-                    { name: "Twitch", status: "Ready", detail: "rtmp://live.twitch.tv/app" },
-                    { name: "Custom RTMP", status: "Draft", detail: "Add your own destination" },
+                    { name: "Cloudflare Stream", status: "Ready", detail: "webRTC.url (WHIP publish)" },
+                    { name: "Custom WHIP", status: "Ready", detail: "Any RFC 9725 endpoint" },
+                    { name: "In-app viewers", status: "Live", detail: "WebRTC via /ws/chat" },
                   ].map((dest) => (
                     <div
                       key={dest.name}
@@ -119,7 +118,7 @@ export default function Home() {
                         </div>
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                            dest.status === "Ready"
+                            dest.status !== "Draft"
                               ? "bg-accent-soft text-accent"
                               : "bg-surface-alt text-muted"
                           }`}
@@ -135,7 +134,7 @@ export default function Home() {
                     Privacy by default
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Stream keys are stored in <span className="font-mono text-foreground">localStorage</span>,
+                    WHIP URLs and tokens are stored in <span className="font-mono text-foreground">localStorage</span>,
                     not in a Vysl account database.
                   </p>
                 </div>
@@ -148,7 +147,7 @@ export default function Home() {
           <div className="max-w-2xl">
             <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">Features</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-              Everything you need to multistream, nothing you don&apos;t.
+              Everything you need to go live, nothing you don&apos;t.
             </h2>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -193,10 +192,10 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">Privacy</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-                Your stream keys belong on your device.
+                Your WHIP credentials belong on your device.
               </h2>
               <p className="mt-4 text-lg leading-8 text-muted">
-                Vysl is designed around local-first setup. RTMP credentials are
+                Vysl is designed around local-first setup. WHIP credentials are
                 saved in your browser&apos;s localStorage, so you can move fast
                 without handing sensitive keys to another account system.
               </p>
@@ -213,8 +212,8 @@ export default function Home() {
 
       <footer className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Vysl. Multistreaming, without the account baggage.</p>
-          <p className="font-mono text-xs">RTMP keys stored in localStorage</p>
+          <p>© 2026 Vysl. Live streaming, without the account baggage.</p>
+          <p className="font-mono text-xs">WHIP credentials stored in localStorage</p>
         </div>
       </footer>
     </div>

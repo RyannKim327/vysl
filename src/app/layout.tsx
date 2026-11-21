@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vysl — Multistream without an account",
+  title: "Vysl — Live studio without an account",
   description:
-    "A Restream alternative for creators. Go live to multiple platforms with RTMP keys saved locally in your browser.",
+    "A browser-native live studio. Publish to any WHIP endpoint with credentials saved locally in your browser.",
   icons: {
     icon: "/vysl.svg",
   },

@@ -6,7 +6,6 @@
     "dev": "node server.mjs",
     "build": "next build",
     "start": "NODE_ENV=production node server.mjs",
-    "ingest": "node ingest/server.mjs",
     "lint": "eslint"
   },
   "dependencies": {

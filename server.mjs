@@ -1,7 +1,6 @@
 import { createServer } from "node:http";
 import next from "next";
 import { WebSocketServer } from "ws";
-import { createIngestWss } from "./ingest/ingest-handler.mjs";
 
 const port = Number.parseInt(process.env.PORT || "3000", 10);
 const hostname = process.env.HOST || "0.0.0.0";
@@ -12,7 +11,6 @@ const handle = app.getRequestHandler();
 
 const rooms = new Map();
 const wss = new WebSocketServer({ noServer: true });
-const ingestWss = createIngestWss();
 
 function getRoom(roomId) {
   let room = rooms.get(roomId);
@@ -70,12 +68,6 @@ server.on("upgrade", (req, socket, head) => {
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit("connection", ws, req);
     });
-    return;
-  }
-  if (pathname === "/ws/ingest") {
-    ingestWss.handleUpgrade(req, socket, head, (ws) => {
-      ingestWss.emit("connection", ws, req);
-    });
   }
 });
 
@@ -87,6 +79,5 @@ app.prepare().then(() => {
       }`,
     );
     console.log("> WebSocket relay listening on /ws/local");
-    console.log("> RTMP ingest listening on /ws/ingest");
   });
 });
