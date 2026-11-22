@@ -2,24 +2,35 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type StreamSignal = {
-  type: "chat";
-  id: string;
-  author: string;
-  body: string;
-  sentAt: number;
-};
+export type StreamSignal =
+  | { type: "join"; viewerId: string }
+  | { type: "leave"; viewerId: string }
+  | { type: "offer"; to: string; from: string; sdp: RTCSessionDescriptionInit }
+  | { type: "answer"; to: string; from: string; sdp: RTCSessionDescriptionInit }
+  | { type: "ice"; to: string; from: string; candidate: RTCIceCandidateInit }
+  | { type: "host-online" }
+  | { type: "host-offline" }
+  | { type: "host-status"; to?: string; online: boolean }
+  | {
+      type: "chat";
+      id: string;
+      author: string;
+      body: string;
+      sentAt: number;
+    };
 
 export type RoomSignal = StreamSignal & { roomId: string };
 
 export type ChannelMode = "connecting" | "live" | "local" | "offline";
+
+export const HOST_ID = "host";
 
 type Listener = (signal: RoomSignal) => void;
 
 function isRoomSignal(value: unknown, roomId: string): value is RoomSignal {
   if (typeof value !== "object" || value === null) return false;
   const signal = value as { roomId?: unknown; type?: unknown };
-  return signal.roomId === roomId && signal.type === "chat";
+  return signal.roomId === roomId && typeof signal.type === "string";
 }
 
 function closeSocket(ws: WebSocket) {
