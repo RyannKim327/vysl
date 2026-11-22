@@ -35,14 +35,12 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Streaming on Vercel
+## Local studio and rooms
 
-Publishing uses [WHIP](https://datatracker.ietf.org/doc/rfc9725/) directly from the browser, so no ingest server, WebSocket, or `ffmpeg` process is needed. The whole app runs on Vercel.
+The studio previews camera and screen sources (including device audio and microphone), picture-in-picture templates, and a chat overlay driven by the saved workspace layout. Nothing is published from the browser.
 
-1. Create a live input in Cloudflare Stream (or use any RFC 9725 WHIP service) and copy its `webRTC.url` publish URL.
-2. Open `/settings`, paste that URL into **WHIP publish URL** (plus a bearer token only if your service requires one), and save. Credentials stay in this browser's localStorage and are only sent to that endpoint when you go live.
-3. Start a camera or screen preview in the studio. Publishing starts automatically and stops when the preview ends.
+1. Open `/settings` to choose a source template and workspace layout. Preferences stay in this browser's localStorage.
+2. Open `/stream`, start a camera or screen preview, and switch sources or template as needed.
+3. Share the `/watch/[id]` link to chat with everyone in the room. The viewer is a full-stage layout with a fullscreen control.
 
-Viewer/chat signaling uses `/ws/chat` on Vercel via `@vercel/functions`. `/ws/local` is only used by the custom Node server for local development.
-
-Cloudflare Stream currently requires WHIP inputs to be played back with WHEP, not HLS/DASH, so this external destination is not a Facebook Live relay. The in-app `/watch/[id]` viewers still receive the host's composited stream directly over WebRTC.
+Chat uses `/ws/chat` on Vercel via `@vercel/functions`. `/ws/local` is only used by the custom Node server for local development.

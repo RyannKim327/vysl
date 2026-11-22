@@ -3,9 +3,9 @@ import Header from "@/components/layout/header";
 
 const features = [
   {
-    title: "Publish from the browser",
+    title: "Compose in the browser",
     description:
-      "Send one composited feed to any RFC 9725 WHIP endpoint, such as a Cloudflare Stream live input, without extra broadcast software.",
+      "Mix your camera and screen into one preview with picture-in-picture and chat overlays, without extra software.",
   },
   {
     title: "No account required",
@@ -13,32 +13,32 @@ const features = [
       "Open Vysl and start configuring instantly. No sign-up, no onboarding funnel, no lock-in.",
   },
   {
-    title: "Local-first credentials",
+    title: "Local-first settings",
     description:
-      "WHIP URLs and tokens stay in your browser's localStorage. Your credentials never leave your device.",
+      "Source templates, layout choices, and chat preferences stay in your browser's localStorage.",
   },
   {
     title: "Built for speed",
     description:
-      "A clean, focused workflow for creators who want to go live fast instead of managing another SaaS dashboard.",
+      "A clean, focused workflow for shaping your scene fast instead of managing another SaaS dashboard.",
   },
 ];
 
 const steps = [
   {
     step: "01",
-    title: "Add a WHIP endpoint",
-    description: "Paste the WHIP publish URL, plus a token if your service requires one.",
+    title: "Choose your sources",
+    description: "Pick a camera, your screen, or a picture-in-picture template.",
   },
   {
     step: "02",
-    title: "Save locally",
+    title: "Tune the layout",
     description: "Vysl keeps your setup in localStorage so it is ready next time on this device.",
   },
   {
     step: "03",
-    title: "Go live",
-    description: "Start your preview once and publish the composited feed from your browser.",
+    title: "Share the room",
+    description: "Open the viewer link and chat with everyone watching.",
   },
 ];
 
@@ -52,15 +52,16 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl gap-14 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
             <div className="flex flex-col gap-7">
               <p className="inline-flex w-fit items-center rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium tracking-[0.18em] text-muted uppercase">
-                Browser-native live studio
+                Browser-native studio
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight text-balance md:text-7xl">
-                Go live everywhere.
-                <span className="text-accent"> Keep your keys yours.</span>
+                Build your scene.
+                <span className="text-accent"> Keep it yours.</span>
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-muted text-pretty">
-                Vysl is a lightweight live studio for creators. Point it at a WHIP
-                endpoint, save it locally, and stream without creating an account.
+                Vysl is a lightweight studio for composing camera and screen sources,
+                previewing layouts, and chatting with everyone in the room — no
+                account required.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -79,8 +80,8 @@ export default function Home() {
               <div className="grid gap-4 pt-4 sm:grid-cols-3">
                 {[
                   { value: "No account", label: "Start instantly" },
-                  { value: "LocalStorage", label: "Keys stay on device" },
-                  { value: "WHIP", label: "Browser-native publishing" },
+                  { value: "LocalStorage", label: "Settings stay on device" },
+                  { value: "Web camera", label: "Camera and screen sources" },
                 ].map((stat) => (
                   <div key={stat.label} className="border-t border-border pt-4">
                     <p className="text-sm font-semibold">{stat.value}</p>
@@ -94,7 +95,7 @@ export default function Home() {
               <div className="rounded-3xl border border-border bg-surface/90 p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)] backdrop-blur">
                 <div className="flex items-center justify-between border-b border-border pb-4">
                   <div>
-                    <p className="text-sm font-medium">Stream destinations</p>
+                    <p className="text-sm font-medium">Workspace panels</p>
                     <p className="text-xs text-muted">Saved in this browser</p>
                   </div>
                   <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
@@ -103,27 +104,21 @@ export default function Home() {
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
-                    { name: "Cloudflare Stream", status: "Ready", detail: "webRTC.url (WHIP publish)" },
-                    { name: "Custom WHIP", status: "Ready", detail: "Any RFC 9725 endpoint" },
-                    { name: "In-app viewers", status: "Live", detail: "WebRTC via /ws/chat" },
-                  ].map((dest) => (
+                    { name: "Camera preview", status: "Ready", detail: "Webcam and microphone" },
+                    { name: "Screen share", status: "Ready", detail: "Display and device audio" },
+                    { name: "Live chat", status: "Live", detail: "WebSockets via /ws/chat" },
+                  ].map((panel) => (
                     <div
-                      key={dest.name}
+                      key={panel.name}
                       className="rounded-2xl border border-border bg-background/70 p-4"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-sm font-medium">{dest.name}</p>
-                          <p className="mt-1 font-mono text-xs text-muted">{dest.detail}</p>
+                          <p className="text-sm font-medium">{panel.name}</p>
+                          <p className="mt-1 font-mono text-xs text-muted">{panel.detail}</p>
                         </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                            dest.status !== "Draft"
-                              ? "bg-accent-soft text-accent"
-                              : "bg-surface-alt text-muted"
-                          }`}
-                        >
-                          {dest.status}
+                        <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
+                          {panel.status}
                         </span>
                       </div>
                     </div>
@@ -134,8 +129,9 @@ export default function Home() {
                     Privacy by default
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    WHIP URLs and tokens are stored in <span className="font-mono text-foreground">localStorage</span>,
-                    not in a Vysl account database.
+                    Your source and layout preferences are stored in{" "}
+                    <span className="font-mono text-foreground">localStorage</span>,
+                    not in an account database.
                   </p>
                 </div>
               </div>
@@ -147,7 +143,7 @@ export default function Home() {
           <div className="max-w-2xl">
             <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">Features</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-              Everything you need to go live, nothing you don&apos;t.
+              Everything you need to shape your scene, nothing you don&apos;t.
             </h2>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -172,7 +168,7 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">How it works</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-                Set up once. Go live in minutes.
+                Set up once. Start in minutes.
               </h2>
             </div>
             <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -192,19 +188,19 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">Privacy</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-                Your WHIP credentials belong on your device.
+                Your setup belongs on your device.
               </h2>
               <p className="mt-4 text-lg leading-8 text-muted">
-                Vysl is designed around local-first setup. WHIP credentials are
-                saved in your browser&apos;s localStorage, so you can move fast
-                without handing sensitive keys to another account system.
+                Vysl is designed around local-first setup. Source and layout
+                preferences are saved in your browser&apos;s localStorage, so you can
+                move fast without handing settings to another account system.
               </p>
             </div>
             <Link
               href="/stream"
               className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              Start streaming
+              Open the studio
             </Link>
           </div>
         </section>
@@ -212,8 +208,8 @@ export default function Home() {
 
       <footer className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-8 text-sm text-muted md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Vysl. Live streaming, without the account baggage.</p>
-          <p className="font-mono text-xs">WHIP credentials stored in localStorage</p>
+          <p>© 2026 Vysl. A focused studio, without the account baggage.</p>
+          <p className="font-mono text-xs">Source and layout settings stored in localStorage</p>
         </div>
       </footer>
     </div>

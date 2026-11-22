@@ -53,3 +53,13 @@ body {
 ::selection {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
+
+:fullscreen {
+  background: var(--background);
+}
+
+:fullscreen .aspect-video {
+  flex: 1 1 auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}

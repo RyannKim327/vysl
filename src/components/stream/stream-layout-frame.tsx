@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useStreamLayout } from "@/components/stream/use-stream-layout";
 
 export default function StreamLayoutFrame({
@@ -12,25 +12,26 @@ export default function StreamLayoutFrame({
 }) {
   const layout = useStreamLayout();
   const sideBySide = !layout.chatBelow;
-  const videoStyle = sideBySide
-    ? { width: `calc(${layout.videoWidth}% - 0.5rem)` }
-    : undefined;
-  const chatStyle = sideBySide
-    ? { width: `calc(${100 - layout.videoWidth}% - 0.5rem)` }
+  const widths = sideBySide
+    ? ({
+        "--video-width": `calc(${layout.videoWidth}% - 0.5rem)`,
+        "--chat-width": `calc(${100 - layout.videoWidth}% - 0.5rem)`,
+      } as CSSProperties)
     : undefined;
 
   return (
     <div
-      className={`flex flex-col items-stretch gap-4 ${
+      className={`flex w-full flex-col items-stretch gap-4 ${
         sideBySide
           ? `lg:flex-row ${layout.chatSide === "left" ? "lg:flex-row-reverse" : ""}`
           : ""
       }`}
+      style={widths}
     >
-      <div className="w-full" style={videoStyle}>
+      <div className={`w-full ${sideBySide ? "lg:w-[var(--video-width)]" : ""}`}>
         {video}
       </div>
-      <div className="flex w-full" style={chatStyle}>
+      <div className={`flex w-full ${sideBySide ? "lg:w-[var(--chat-width)]" : ""}`}>
         {chat}
       </div>
     </div>

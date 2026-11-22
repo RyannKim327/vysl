@@ -4,7 +4,10 @@ import WatchRoom from "@/components/stream/watch-room";
 
 function RoomFallback() {
   return (
-    <div className="h-[36rem] animate-pulse rounded-3xl border border-border bg-surface-alt/60" />
+    <div className="flex w-full flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row">
+      <div className="h-[42dvh] min-h-[16rem] w-full shrink-0 animate-pulse rounded-3xl border border-border bg-surface-alt/60 lg:h-auto lg:min-h-0 lg:flex-1" />
+      <div className="h-[26rem] w-full shrink-0 animate-pulse rounded-3xl border border-border bg-surface-alt/60 lg:h-auto lg:min-h-0 lg:w-[24rem]" />
+    </div>
   );
 }
 
@@ -13,19 +16,18 @@ async function WatchContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <>
-      <div className="mb-8">
-        <p className="text-sm font-medium tracking-[0.18em] text-accent uppercase">
+      <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="text-xs font-medium tracking-[0.18em] text-accent uppercase">
           Viewer
         </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
           Watching stream
         </h1>
-        <p className="mt-3 leading-7 text-muted">
-          Stream ID:{" "}
+        <p className="text-xs text-muted">
+          ID:{" "}
           <span className="font-mono font-semibold tracking-[0.16em] text-accent">
             {id}
           </span>
-          . You can watch the video and chat with everyone else here.
         </p>
       </div>
 
@@ -42,19 +44,21 @@ export default function WatchPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
       <Header />
-      <main className="mx-auto w-full max-w-6xl px-6 py-12">
-        <Suspense
-          fallback={
-            <>
-              <div className="mb-8 h-32 animate-pulse rounded-3xl border border-border bg-surface-alt/60" />
-              <RoomFallback />
-            </>
-          }
-        >
-          <WatchContent params={params} />
-        </Suspense>
+      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto px-3 py-4 sm:px-4 lg:overflow-hidden lg:px-6 lg:py-6">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
+          <Suspense
+            fallback={
+              <>
+                <div className="h-6 w-64 shrink-0 animate-pulse rounded-full bg-surface-alt" />
+                <RoomFallback />
+              </>
+            }
+          >
+            <WatchContent params={params} />
+          </Suspense>
+        </div>
       </main>
     </div>
   );

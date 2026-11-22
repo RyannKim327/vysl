@@ -67,7 +67,7 @@ export default function StreamSourceSettings() {
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Stream source</h2>
           <p className="mt-1 text-sm text-muted">
-            Compose your camera and screen into the video viewers receive.
+            Compose your camera and screen into the local preview.
           </p>
         </div>
         <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
@@ -170,10 +170,10 @@ export default function StreamSourceSettings() {
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
           <div>
-            <p className="text-sm font-medium">Include chat in the stream</p>
+            <p className="text-sm font-medium">Include chat in the preview</p>
             <p className="mt-1 text-xs text-muted">
               Draws the live chat panel next to the video, matching your workspace
-              layout, in the feed sent to Facebook.
+              layout, in the local preview.
             </p>
           </div>
           <button

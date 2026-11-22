@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Vysl — Live studio without an account",
   description:
-    "A browser-native live studio. Publish to any WHIP endpoint with credentials saved locally in your browser.",
+    "A browser-native studio for composing camera and screen sources, previewing layouts, and chatting.",
   icons: {
     icon: "/vysl.svg",
   },

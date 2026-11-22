@@ -27,31 +27,31 @@ export default function StreamStudio() {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-5">
         <div>
           <p className="text-xs font-medium tracking-[0.14em] text-muted uppercase">
             Stream ID
           </p>
-          <p className="mt-1 font-mono text-xl font-semibold tracking-[0.2em] text-accent">
+          <p className="mt-1 font-mono text-lg font-semibold tracking-[0.2em] text-accent sm:text-xl">
             {roomId}
           </p>
           <p className="mt-1 text-xs text-muted">
             Share this ID so others can watch and chat with you.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <LayoutQuickPicker />
           <button
             type="button"
             onClick={copyLink}
-            className="inline-flex items-center rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex flex-1 items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none"
           >
             {copied ? "Link copied" : "Copy watch link"}
           </button>
           <Link
             href={`/watch/${roomId}`}
             target="_blank"
-            className="inline-flex items-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium transition hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex flex-1 items-center justify-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium transition hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:flex-none"
           >
             Open viewer
           </Link>

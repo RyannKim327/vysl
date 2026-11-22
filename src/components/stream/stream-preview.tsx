@@ -2,37 +2,16 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { browser } from "react-dom";
-import Link from "next/link";
-import { useStreamChatFeed, useStreamRoom } from "@/components/stream/stream-room";
+import FullscreenButton from "@/components/stream/fullscreen-button";
+import { useStreamChatFeed } from "@/components/stream/stream-room";
 import { useStreamLayout } from "@/components/stream/use-stream-layout";
 import { useStreamSource } from "@/components/stream/use-stream-source";
-import { HOST_ID, type StreamSignal } from "@/components/stream/use-stream-channel";
-import { WhipPublisher } from "@/lib/whip-publisher";
-import { readStreamSettings, STREAM_SETTINGS_KEY } from "@/lib/stream-settings";
 import {
   SOURCE_MODES,
   writeStreamSource,
   type AudioSource,
   type SourceMode,
 } from "@/lib/stream-source";
-
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-];
-
-async function addQueuedIce(
-  pc: RTCPeerConnection,
-  viewerId: string,
-  queue: Map<string, RTCIceCandidateInit[]>,
-) {
-  const candidates = queue.get(viewerId) ?? [];
-  queue.delete(viewerId);
-  for (const candidate of candidates) {
-    try {
-      await pc.addIceCandidate(candidate);
-    } catch {}
-  }
-}
 
 function drawContain(
   ctx: CanvasRenderingContext2D,
@@ -151,153 +130,31 @@ function drawChatPanel(
 export default function StreamPreview() {
   use(browser("Video preview is available in your browser."));
 
-  const { send, subscribe, mode } = useStreamRoom();
   const { messages: chatMessages } = useStreamChatFeed();
   const layout = useStreamLayout();
   const source = useStreamSource();
   const sourceRef = useRef(source);
   const chatRef = useRef(chatMessages);
   const layoutRef = useRef(layout);
+  const stageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const canvasStreamRef = useRef<MediaStream | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameTimerRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const audioNodesRef = useRef<AudioNode[]>([]);
   const screenEndedRef = useRef<(() => void) | null>(null);
-  const publisherRef = useRef<WhipPublisher | null>(null);
-  const publishAttemptRef = useRef(0);
-  const publishedVersionRef = useRef<number | null>(null);
   const wasPreviewingRef = useRef(false);
-  const peersRef = useRef(new Map<string, RTCPeerConnection>());
-  const pendingIceRef = useRef(new Map<string, RTCIceCandidateInit[]>());
   const [previewing, setPreviewing] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
-  const [broadcastVersion, setBroadcastVersion] = useState(0);
-  const [publishStatus, setPublishStatus] = useState<
-    "idle" | "connecting" | "live" | "error"
-  >("idle");
-  const [publishError, setPublishError] = useState<string | null>(null);
-  const [viewers, setViewers] = useState(0);
   const [micOn, setMicOn] = useState(true);
   const [micAvailable, setMicAvailable] = useState(true);
   const [deviceAudioAvailable, setDeviceAudioAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [settings, setSettings] = useState(readStreamSettings);
-
-  const closePeer = useCallback((viewerId: string) => {
-    const pc = peersRef.current.get(viewerId);
-    if (pc) {
-      pc.onicecandidate = null;
-      pc.onconnectionstatechange = null;
-      pc.close();
-      peersRef.current.delete(viewerId);
-    }
-    pendingIceRef.current.delete(viewerId);
-    setViewers(peersRef.current.size);
-  }, []);
-
-  const connectViewer = useCallback(
-    async (viewerId: string, stream: MediaStream) => {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-      peersRef.current.set(viewerId, pc);
-      setViewers(peersRef.current.size);
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          send({
-            type: "ice",
-            to: viewerId,
-            from: HOST_ID,
-            candidate: event.candidate.toJSON(),
-          });
-        }
-      };
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed" || pc.connectionState === "closed") {
-          closePeer(viewerId);
-        }
-      };
-
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        send({ type: "offer", to: viewerId, from: HOST_ID, sdp: offer });
-      } catch {
-        closePeer(viewerId);
-      }
-    },
-    [closePeer, send],
-  );
-
-  const handleSignal = useCallback(
-    (signal: StreamSignal) => {
-      switch (signal.type) {
-        case "join": {
-          const stream = localStreamRef.current;
-          if (!stream) {
-            send({ type: "host-status", to: signal.viewerId, online: false });
-          } else if (!peersRef.current.has(signal.viewerId)) {
-            void connectViewer(signal.viewerId, stream);
-          } else {
-            send({ type: "host-status", to: signal.viewerId, online: true });
-          }
-          break;
-        }
-        case "answer": {
-          const pc = peersRef.current.get(signal.from);
-          if (!pc) break;
-          void (async () => {
-            try {
-              await pc.setRemoteDescription(signal.sdp);
-              await addQueuedIce(pc, signal.from, pendingIceRef.current);
-            } catch {}
-          })();
-          break;
-        }
-        case "ice": {
-          if (signal.to !== HOST_ID) break;
-          const pc = peersRef.current.get(signal.from);
-          if (!pc) break;
-          if (!pc.remoteDescription) {
-            const queue = pendingIceRef.current.get(signal.from) ?? [];
-            queue.push(signal.candidate);
-            pendingIceRef.current.set(signal.from, queue);
-          } else {
-            void pc.addIceCandidate(signal.candidate).catch(() => {});
-          }
-          break;
-        }
-        case "leave":
-          closePeer(signal.viewerId);
-          break;
-        default:
-          break;
-      }
-    },
-    [closePeer, connectViewer, send],
-  );
-
-  useEffect(() => subscribe(handleSignal), [handleSignal, subscribe]);
-
-  useEffect(() => {
-    if (previewing && mode !== "connecting") send({ type: "host-online" });
-  }, [mode, previewing, send]);
-
-  useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === STREAM_SETTINGS_KEY) setSettings(readStreamSettings());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) audioContextRef.current = new AudioContext();
@@ -318,7 +175,6 @@ export default function StreamPreview() {
     audioDestinationRef.current = null;
     canvasStreamRef.current?.getTracks().forEach((track) => track.stop());
     canvasStreamRef.current = null;
-    canvasRef.current = null;
   }, []);
 
   const buildAudioTracks = useCallback((): MediaStreamTrack[] => {
@@ -357,7 +213,6 @@ export default function StreamPreview() {
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    canvasRef.current = canvas;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
@@ -446,24 +301,10 @@ export default function StreamPreview() {
   }, [buildAudioTracks, stopComposition]);
 
   const applyBroadcast = useCallback((stream: MediaStream) => {
-    localStreamRef.current = stream;
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       void videoRef.current.play().catch(() => {});
     }
-    for (const pc of peersRef.current.values()) {
-      const videoTrack = stream.getVideoTracks()[0];
-      const audioTrack = stream.getAudioTracks()[0];
-      for (const sender of pc.getSenders()) {
-        if (sender.track?.kind === "video" && videoTrack) {
-          void sender.replaceTrack(videoTrack);
-        }
-        if (sender.track?.kind === "audio" && audioTrack) {
-          void sender.replaceTrack(audioTrack);
-        }
-      }
-    }
-    setBroadcastVersion((version) => version + 1);
   }, []);
 
   const rebuildBroadcast = useCallback(() => {
@@ -474,8 +315,7 @@ export default function StreamPreview() {
     const current = sourceRef.current;
     if (!screen && !current.showChat) {
       stopComposition();
-      const fallback = camera ?? screen;
-      if (fallback) applyBroadcast(fallback);
+      if (camera) applyBroadcast(camera);
       return;
     }
 
@@ -497,61 +337,6 @@ export default function StreamPreview() {
     wasPreviewingRef.current = previewing;
     if (previewing && wasPreviewing) rebuildBroadcast();
   }, [previewing, rebuildBroadcast, source]);
-
-  const stopPublishing = useCallback(() => {
-    publishAttemptRef.current += 1;
-    publisherRef.current?.stop();
-    setPublishStatus("idle");
-    setPublishError(null);
-  }, []);
-
-  const startPublishing = useCallback(async () => {
-    const stream = localStreamRef.current;
-    if (!stream) return;
-    const attempt = ++publishAttemptRef.current;
-
-    if (!settings.whipUrl) {
-      setPublishStatus("error");
-      setPublishError("Save a WHIP publish URL in Settings to go live.");
-      return;
-    }
-
-    try {
-      setPublishError(null);
-      setPublishStatus("connecting");
-      if (!publisherRef.current) publisherRef.current = new WhipPublisher();
-      await publisherRef.current.start(stream, {
-        endpoint: settings.whipUrl,
-        token: settings.token,
-        onError: (message) => {
-          if (attempt !== publishAttemptRef.current) return;
-          setPublishStatus("error");
-          setPublishError(message);
-        },
-      });
-      if (attempt !== publishAttemptRef.current) return;
-      setPublishStatus("live");
-    } catch (caught) {
-      if (attempt !== publishAttemptRef.current) return;
-      setPublishStatus("error");
-      setPublishError(
-        caught instanceof Error ? caught.message : "Could not start WHIP publishing.",
-      );
-    }
-  }, [settings.whipUrl, settings.token]);
-
-  useEffect(() => {
-    if (!previewing) {
-      stopPublishing();
-      publishedVersionRef.current = null;
-      return;
-    }
-    if (!settings.whipUrl) return;
-    if (publishedVersionRef.current === broadcastVersion) return;
-    publishedVersionRef.current = broadcastVersion;
-    stopPublishing();
-    void startPublishing();
-  }, [broadcastVersion, previewing, settings.whipUrl, settings.token, startPublishing, stopPublishing]);
 
   const stopScreenShare = useCallback(() => {
     screenEndedRef.current?.();
@@ -691,7 +476,6 @@ export default function StreamPreview() {
   }
 
   function stopPreview() {
-    stopPublishing();
     screenEndedRef.current?.();
     screenEndedRef.current = null;
     stopComposition();
@@ -699,16 +483,13 @@ export default function StreamPreview() {
     screenStreamRef.current = null;
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     cameraStreamRef.current = null;
-    localStreamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     if (cameraVideoRef.current) cameraVideoRef.current.srcObject = null;
     if (screenVideoRef.current) screenVideoRef.current.srcObject = null;
-    for (const viewerId of Array.from(peersRef.current.keys())) closePeer(viewerId);
     setPreviewing(false);
     setScreenSharing(false);
     setDeviceAudioAvailable(false);
     writeStreamSource({ ...sourceRef.current, mode: "camera" });
-    if (mode !== "connecting") send({ type: "host-offline" });
   }
 
   function toggleMic() {
@@ -721,67 +502,49 @@ export default function StreamPreview() {
 
   useEffect(() => {
     return () => {
-      publisherRef.current?.stop();
       screenEndedRef.current?.();
       stopComposition();
       void audioContextRef.current?.close();
       screenStreamRef.current?.getTracks().forEach((track) => track.stop());
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-      for (const viewerId of Array.from(peersRef.current.keys())) closePeer(viewerId);
     };
-  }, [closePeer, stopComposition]);
+  }, [stopComposition]);
 
   const sourceLabel =
     SOURCE_MODES.find((item) => item.id === source.mode)?.label ?? "Camera only";
   const startLabel =
     source.mode === "screen"
-      ? "Start screen stream"
+      ? "Start screen preview"
       : source.mode === "camera"
         ? "Start camera preview"
         : "Start camera + screen";
 
   return (
-    <div className="flex h-full flex-col rounded-3xl border border-border bg-surface p-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.35)]">
+    <div
+      ref={stageRef}
+      className="flex h-full flex-col rounded-3xl border border-border bg-surface p-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.35)]"
+    >
       <div className="hidden" aria-hidden="true">
         <video ref={cameraVideoRef} autoPlay muted playsInline />
         <video ref={screenVideoRef} autoPlay muted playsInline />
       </div>
 
-      <div className="flex items-center justify-between gap-4 pb-4">
+      <div className="flex items-center justify-between gap-3 pb-4">
         <div>
-          <p className="text-sm font-medium">Video stream</p>
+          <p className="text-sm font-medium">Video preview</p>
           <p className="text-xs text-muted">
             {previewing
-              ? `${viewers} viewer${viewers === 1 ? "" : "s"} connected · ${sourceLabel}`
+              ? `${sourceLabel} · local preview`
               : "Preview your camera or share your screen"}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {publishStatus !== "idle" && (
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                publishStatus === "live"
-                  ? "bg-emerald-500/15 text-emerald-400"
-                  : publishStatus === "connecting"
-                    ? "bg-amber-500/15 text-amber-400"
-                    : "bg-red-500/15 text-red-400"
-              }`}
-            >
-              {publishStatus === "live"
-                ? "Live via WHIP"
-                : publishStatus === "connecting"
-                  ? "Going live…"
-                  : "WHIP error"}
-            </span>
-          )}
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              previewing ? "bg-accent-soft text-accent" : "bg-surface-alt text-muted"
-            }`}
-          >
-            {previewing ? "Previewing" : "Offline"}
-          </span>
-        </div>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+            previewing ? "bg-accent-soft text-accent" : "bg-surface-alt text-muted"
+          }`}
+        >
+          {previewing ? "Previewing" : "Offline"}
+        </span>
       </div>
 
       <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-[#0b0a09]">
@@ -807,8 +570,7 @@ export default function StreamPreview() {
             </div>
             <p className="text-sm font-medium text-white/90">No video source connected</p>
             <p className="max-w-xs text-xs leading-6 text-white/50">
-              Start your camera or share your screen to preview the feed you want
-              to stream.
+              Start your camera or share your screen to preview the feed.
             </p>
           </div>
         )}
@@ -820,31 +582,19 @@ export default function StreamPreview() {
           />
           {previewing ? (screenSharing ? sourceLabel : "Camera on") : "No signal"}
         </div>
+        <div className="absolute right-4 top-4">
+          <FullscreenButton targetRef={stageRef} />
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 text-xs">
-          {settings.whipUrl ? (
-            <>
-              <p className="font-medium text-foreground">Destination ready</p>
-              <p className="truncate font-mono text-muted">{settings.whipUrl}</p>
-            </>
-          ) : (
-            <>
-              <p className="font-medium text-foreground">No WHIP URL saved</p>
-              <p className="text-muted">
-                Add one in{" "}
-                <Link href="/settings" className="text-accent hover:underline">
-                  Settings
-                </Link>{" "}
-                before going live.
-              </p>
-            </>
-          )}
+          <p className="font-medium text-foreground">Local preview only</p>
+          <p className="text-muted">Nothing is published from this browser.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            aria-label="Stream source template"
+            aria-label="Source template"
             value={source.mode}
             onChange={(event) =>
               writeStreamSource({ ...source, mode: event.target.value as SourceMode })
@@ -905,28 +655,6 @@ export default function StreamPreview() {
               {screenSharing ? "Stop sharing" : "Share screen"}
             </button>
           )}
-          {previewing && (
-            <button
-              type="button"
-              onClick={
-                publishStatus === "live" || publishStatus === "connecting"
-                  ? stopPublishing
-                  : () => void startPublishing()
-              }
-              className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${
-                publishStatus === "live"
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                  : "border-border bg-surface-alt hover:bg-border/50"
-              }`}
-              disabled={!previewing}
-            >
-              {publishStatus === "live"
-                ? "Stop live"
-                : publishStatus === "connecting"
-                  ? "Connecting…"
-                  : "Go live"}
-            </button>
-          )}
           <button
             type="button"
             onClick={previewing ? stopPreview : startStream}
@@ -944,7 +672,7 @@ export default function StreamPreview() {
       )}
       {previewing && !micAvailable && source.audioSource !== "device" && (
         <p className="mt-3 text-xs text-muted">
-          Microphone unavailable — {source.audioSource === "mic" ? "no audio will be sent" : "streaming device audio only"}.
+          Microphone unavailable — {source.audioSource === "mic" ? "no microphone audio" : "device audio only"}.
         </p>
       )}
       {source.audioSource === "device" && !screenSharing && (
@@ -960,11 +688,6 @@ export default function StreamPreview() {
       {error && (
         <p role="alert" className="mt-3 text-sm text-red-500">
           {error}
-        </p>
-      )}
-      {publishError && (
-        <p role="alert" className="mt-3 text-sm text-red-500">
-          {publishError}
         </p>
       )}
     </div>

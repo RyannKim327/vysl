@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState, type FormEvent } from "react";
 import { browser } from "react-dom";
 import { useStreamChatFeed, useStreamRoom } from "@/components/stream/stream-room";
+import { useStreamLayout } from "@/components/stream/use-stream-layout";
 import { getChatAuthor } from "@/lib/chat-storage";
 
 function formatTime(sentAt: number) {
@@ -12,11 +13,13 @@ function formatTime(sentAt: number) {
   });
 }
 
-export default function StreamChat() {
+export default function StreamChat({ theater = false }: { theater?: boolean }) {
   use(browser("Chat messages are loaded in your browser."));
 
   const { roomId, send, mode } = useStreamRoom();
   const { messages, appendMessage } = useStreamChatFeed();
+  const layout = useStreamLayout();
+  const compact = theater || !layout.chatBelow;
   const [draft, setDraft] = useState("");
   const [author] = useState(() => getChatAuthor(roomId));
   const listRef = useRef<HTMLDivElement>(null);
@@ -44,7 +47,11 @@ export default function StreamChat() {
   }
 
   return (
-    <div className="flex h-full min-h-[28rem] flex-col overflow-hidden rounded-3xl border border-border bg-surface lg:min-h-0">
+    <div
+      className={`flex h-full min-h-[24rem] flex-col overflow-hidden rounded-3xl border border-border bg-surface sm:min-h-[28rem] ${
+        compact ? "lg:min-h-0" : ""
+      }`}
+    >
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div>
           <p className="text-sm font-medium">Live chat</p>
