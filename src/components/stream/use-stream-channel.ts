@@ -17,11 +17,17 @@ export type ChannelMode = "connecting" | "live" | "local" | "offline";
 type Listener = (signal: RoomSignal) => void;
 
 function isRoomSignal(value: unknown, roomId: string): value is RoomSignal {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { roomId?: unknown }).roomId === roomId
-  );
+  if (typeof value !== "object" || value === null) return false;
+  const signal = value as { roomId?: unknown; type?: unknown };
+  return signal.roomId === roomId && signal.type === "chat";
+}
+
+function closeSocket(ws: WebSocket) {
+  if (ws.readyState === WebSocket.CONNECTING) {
+    ws.addEventListener("open", () => ws.close(), { once: true });
+    return;
+  }
+  if (ws.readyState === WebSocket.OPEN) ws.close();
 }
 
 export function useStreamChannel(roomId: string) {
@@ -62,7 +68,7 @@ export function useStreamChannel(roomId: string) {
     const startLocal = () => {
       if (disposed || channel) return;
       clearTimer();
-      socket?.close();
+      if (socket) closeSocket(socket);
       socket = null;
       if (typeof BroadcastChannel === "undefined") {
         setMode("offline");
@@ -91,6 +97,7 @@ export function useStreamChannel(roomId: string) {
         ws.onopen = () => {
           if (disposed) return;
           clearTimer();
+          ws.send(JSON.stringify({ roomId, type: "join" }));
           sendRef.current = (signal) => {
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ roomId, ...signal }));
@@ -120,12 +127,13 @@ export function useStreamChannel(roomId: string) {
       }
     };
 
-    connect();
+    const startTimer = window.setTimeout(connect, 0);
 
     return () => {
       disposed = true;
+      window.clearTimeout(startTimer);
       clearTimer();
-      socket?.close();
+      if (socket) closeSocket(socket);
       channel?.close();
       sendRef.current = () => {};
     };
